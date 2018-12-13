@@ -70,7 +70,7 @@ static void nextTrack(uint16_t track) {
     return;
   }
   _lastTrackFinished = track;
-   
+
   if (knownCard == false) {
     // Wenn eine neue Karte angelernt wird soll das Ende eines Tracks nicht
     // verarbeitet werden
@@ -397,6 +397,7 @@ void setupCard() {
   EEPROM.write(myCard.folder, 1);
 
   // Karte ist konfiguriert -> speichern
+  mp3.pause();
   writeCard(myCard);
 }
 
