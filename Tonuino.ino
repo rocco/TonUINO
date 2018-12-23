@@ -79,7 +79,7 @@ static void nextTrack(uint16_t track) {
 
   if (currentTrack != numTracksInFolder) {
     currentTrack = currentTrack + 1;
-    Serial.print(F("Hörbuch Modus ist aktiv -> nächster Track und Fortschritt speichern"));
+    Serial.print(F("Hörbuch Modus ist aktiv -> nächster Track und Fortschritt speichern, currentTrack = "));
     Serial.println(currentTrack);
     mp3.playFolderTrack(myCard.folder, currentTrack);
     // Fortschritt im EEPROM abspeichern
@@ -119,13 +119,14 @@ MFRC522::StatusCode status;
 #define buttonDown A2
 #define buttonPlus A4
 #define buttonMinus A5
-#define busyPin 3
+#define busyPin 4
 
 #define LONG_PRESS 1000
 
 Button pauseButton(buttonPause);
 Button upButton(buttonUp);
 Button downButton(buttonDown);
+
 Button plusButton(buttonPlus);
 Button minusButton(buttonMinus);
 
@@ -148,7 +149,7 @@ void setup() {
   Serial.println(F("TonUINO Version 2.0"));
   Serial.println(F("(c) Thorsten Voß"));
 
-  // Pins mit PullUp
+  // Knöpfe mit PullUp
   pinMode(buttonPause, INPUT_PULLUP);
   pinMode(buttonUp, INPUT_PULLUP);
   pinMode(buttonDown, INPUT_PULLUP);
@@ -212,17 +213,50 @@ void loop() {
         mfrc522.PCD_StopCrypto1();
       }
       ignorePauseButton = true;
-    } else if (plusButton.wasReleased()) {
-      // Serial.println(F("Volume Up"));
-      mp3.increaseVolume();
-    } else if (minusButton.wasReleased()) {
-      // Serial.println(F("Volume Down"));
-      mp3.decreaseVolume();
-    } else if (upButton.wasReleased()) {
-      nextTrack(random(65536));
-    } else if (downButton.wasReleased()) {
-      previousTrack();
     }
+
+    if (minusButton.wasPressed()) {
+      uint8_t currentVolume = mp3.getVolume();
+      Serial.print(F("Volume Down, currentVolume = "));
+      Serial.print(currentVolume);
+      currentVolume = (currentVolume - 2) & 0xFF;
+      if (currentVolume <= 2 || currentVolume > 20) {
+        currentVolume = 1;
+      }
+      Serial.print(F(", new Volume = "));
+      Serial.println(currentVolume);
+      mp3.setVolume(currentVolume);
+      // mp3.decreaseVolume();
+      ignoreDownButton = true;
+    } else if (plusButton.wasPressed()) {
+      uint8_t currentVolume = mp3.getVolume();
+      Serial.print(F("Volume Up, currentVolume = "));
+      Serial.print(currentVolume);
+      currentVolume = (currentVolume + 2) & 0xFF;
+      if (currentVolume > 20) {
+        currentVolume = 20;
+      }
+      Serial.print(F(", new Volume = "));
+      Serial.println(currentVolume);
+      mp3.setVolume(currentVolume);
+      // mp3.increaseVolume();
+      ignoreUpButton = true;
+    } else if (upButton.wasReleased()) {
+      if (!ignoreUpButton) {
+        Serial.println(F("Next Track"));
+        nextTrack(random(65536));
+      } else{
+        ignoreUpButton = false;
+      }
+    } else if (downButton.wasReleased()) {
+      if (!ignoreDownButton) {
+        Serial.println(F("Previous Track"));
+        previousTrack();
+      } else {
+        ignoreDownButton = false;
+      }
+    }
+
     // Ende der Buttons
   } while (!mfrc522.PICC_IsNewCardPresent());
 
