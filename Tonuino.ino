@@ -117,13 +117,18 @@ MFRC522::StatusCode status;
 #define buttonPause A0
 #define buttonUp A1
 #define buttonDown A2
-#define busyPin 4
+#define buttonPlus A4
+#define buttonMinus A5
+#define busyPin 3
 
 #define LONG_PRESS 1000
 
 Button pauseButton(buttonPause);
 Button upButton(buttonUp);
 Button downButton(buttonDown);
+Button plusButton(buttonPlus);
+Button minusButton(buttonMinus);
+
 bool ignorePauseButton = false;
 bool ignoreUpButton = false;
 bool ignoreDownButton = false;
@@ -143,10 +148,12 @@ void setup() {
   Serial.println(F("TonUINO Version 2.0"));
   Serial.println(F("(c) Thorsten Voß"));
 
-  // Knöpfe mit PullUp
+  // Pins mit PullUp
   pinMode(buttonPause, INPUT_PULLUP);
   pinMode(buttonUp, INPUT_PULLUP);
   pinMode(buttonDown, INPUT_PULLUP);
+  pinMode(buttonPlus, INPUT_PULLUP);
+  pinMode(buttonMinus, INPUT_PULLUP);
 
   // Busy Pin
   pinMode(busyPin, INPUT);
@@ -182,6 +189,8 @@ void loop() {
     pauseButton.read();
     upButton.read();
     downButton.read();
+    plusButton.read();
+    minusButton.read();
 
     if (pauseButton.wasReleased()) {
       if (ignorePauseButton == false)
@@ -203,30 +212,16 @@ void loop() {
         mfrc522.PCD_StopCrypto1();
       }
       ignorePauseButton = true;
-    }
-
-    if (upButton.pressedFor(LONG_PRESS)) {
-      Serial.println(F("Volume Up"));
+    } else if (plusButton.wasReleased()) {
+      // Serial.println(F("Volume Up"));
       mp3.increaseVolume();
-      ignoreUpButton = true;
-    } else if (upButton.wasReleased()) {
-      if (!ignoreUpButton) {
-        nextTrack(random(65536));
-      } else{
-        ignoreUpButton = false;
-      }
-    }
-
-    if (downButton.pressedFor(LONG_PRESS)) {
-      Serial.println(F("Volume Down"));
+    } else if (minusButton.wasReleased()) {
+      // Serial.println(F("Volume Down"));
       mp3.decreaseVolume();
-      ignoreDownButton = true;
+    } else if (upButton.wasReleased()) {
+      nextTrack(random(65536));
     } else if (downButton.wasReleased()) {
-      if (!ignoreDownButton) {
-        previousTrack();
-      } else {
-        ignoreDownButton = false;
-      }
+      previousTrack();
     }
     // Ende der Buttons
   } while (!mfrc522.PICC_IsNewCardPresent());
